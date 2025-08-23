@@ -3,4 +3,5 @@ export interface DetectionEvent {
   timestamp: string; // ISO string
   explanation: string;
   frameDataUri: string;
+  objectType: string;
 }

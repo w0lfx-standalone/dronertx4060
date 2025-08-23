@@ -42,11 +42,12 @@ export default function WebcamFeed({
             const frameDataUri = canvas.toDataURL("image/jpeg");
             
             const result = await realTimeDroneDetection({ frameDataUri });
-            if (result.droneDetected && result.explanation) {
-            onDetection({
-                explanation: result.explanation,
-                frameDataUri: frameDataUri,
-            });
+            if (result.objectType !== 'none' && result.explanation) {
+              onDetection({
+                  explanation: result.explanation,
+                  frameDataUri: frameDataUri,
+                  objectType: result.objectType,
+              });
             }
         }
     } catch (error) {

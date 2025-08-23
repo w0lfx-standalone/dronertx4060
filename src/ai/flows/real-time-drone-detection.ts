@@ -14,13 +14,14 @@ const RealTimeDroneDetectionInputSchema = z.object({
   frameDataUri: z
     .string()
     .describe(
-      "A frame from the webcam feed, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A frame from the webcam feed, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'.",
     ),
 });
 export type RealTimeDroneDetectionInput = z.infer<typeof RealTimeDroneDetectionInputSchema>;
 
 const RealTimeDroneDetectionOutputSchema = z.object({
   droneDetected: z.boolean().describe('Whether a drone is detected in the frame.'),
+  objectType: z.string().describe('The type of object detected (e.g., "drone", "bird", "plane", "none").'),
   explanation: z.string().optional().describe('Optional explanation of why the drone was detected.')
 });
 export type RealTimeDroneDetectionOutput = z.infer<typeof RealTimeDroneDetectionOutputSchema>;
@@ -33,14 +34,17 @@ const detectDronePrompt = ai.definePrompt({
   name: 'detectDronePrompt',
   input: {schema: RealTimeDroneDetectionInputSchema},
   output: {schema: RealTimeDroneDetectionOutputSchema},
-  prompt: `You are an expert in analyzing webcam feeds for drone detection.
+  prompt: `You are an expert in analyzing webcam feeds for drone and other flying object detection.
 
-  Analyze the following webcam frame and determine if a drone is present. Provide a brief explanation if a drone is detected.
+  Analyze the following webcam frame and determine if a drone or another flying object is present.
 
   Webcam Frame: {{media url=frameDataUri}}
 
-  Consider factors like object size, motion patterns, and typical drone shapes. Return droneDetected as true if a drone is detected, otherwise false.
-  If droneDetected is true, populate the explanation with details on contributing factors like size, shape and motion.
+  1.  If a drone is detected, set 'droneDetected' to true, 'objectType' to 'drone', and provide an explanation.
+  2.  If a flying object that is NOT a drone is detected (e.g., a bird, airplane, helicopter), set 'droneDetected' to false, set 'objectType' to the identified object (e.g., 'bird', 'plane'), and provide an explanation of what was detected.
+  3.  If no flying object is detected, set 'droneDetected' to false and 'objectType' to 'none'.
+
+  Consider factors like object size, motion patterns, and typical shapes.
 `,
 });
 

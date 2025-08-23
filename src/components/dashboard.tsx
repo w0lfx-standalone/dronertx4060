@@ -24,12 +24,14 @@ export default function Dashboard() {
 
       setDetectionEvents((prevEvents) => [newEvent, ...prevEvents].slice(0, 50));
 
-      toast({
-        title: "🚨 Drone Detected!",
-        description: newEvent.explanation,
-        duration: 5000,
-        variant: 'destructive'
-      });
+      if (event.objectType === 'drone') {
+        toast({
+            title: "🚨 Drone Detected!",
+            description: newEvent.explanation,
+            duration: 5000,
+            variant: 'destructive'
+        });
+      }
     },
     [toast]
   );
