@@ -8,7 +8,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { RealTimeDroneDetectionInputSchema, RealTimeDroneDetectionOutputSchema, type RealTimeDroneDetectionInput, type RealTimeDroneDetectionOutput } from '@/types';
-import { ollama } from 'genkitx-ollama';
 
 
 export async function realTimeDroneDetection(input: RealTimeDroneDetectionInput): Promise<RealTimeDroneDetectionOutput> {
@@ -24,7 +23,7 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
   async (input) => {
     try {
       const llmResponse = await ai.generate({
-        model: ollama('llama3'),
+        model: 'ollama/llama3',
         prompt: `You are an expert in analyzing webcam feeds for drone and other flying object detection. Analyze the image and determine if a drone or another flying object is present. Respond in valid JSON format only, with no additional text or markdown. Example: {"droneDetected": true, "objectType": "drone", "explanation": "A small quadcopter was detected in the upper left corner."}. Image: {{media url=${input.frameDataUri}}}`,
         config: {
           temperature: 0.2,
