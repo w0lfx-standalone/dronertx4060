@@ -24,25 +24,32 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
     try {
       const llmResponse = await ai.generate({
         model: 'ollama/llama3',
-        prompt: `You are an expert in analyzing webcam feeds for drone and other flying object detection. Analyze the image and determine if a drone or another flying object is present. Respond in valid JSON format only, with no additional text or markdown. Example: {"droneDetected": true, "objectType": "drone", "explanation": "A small quadcopter was detected in the upper left corner."}. Image: {{media url=${input.frameDataUri}}}`,
+        prompt: `Analyze the image provided and determine if a drone is present. Answer with only "yes" or "no". Image: {{media url=${input.frameDataUri}}}`,
         config: {
-          temperature: 0.2,
+          temperature: 0.1,
         },
       });
 
-      const rawText = llmResponse.text;
+      const responseText = llmResponse.text.toLowerCase().trim();
       
-      // Clean up the model's response to make sure it's valid JSON
-      const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+      if (responseText.includes('yes')) {
+        return {
+          droneDetected: true,
+          objectType: 'drone',
+          explanation: 'A flying object identified as a drone was detected.',
+        };
+      }
       
-      const parsedOutput = JSON.parse(jsonText);
-      const validatedOutput = RealTimeDroneDetectionOutputSchema.parse(parsedOutput);
-
-      return validatedOutput;
+      // If the answer is not 'yes', assume no drone was detected.
+      return {
+        droneDetected: false,
+        objectType: 'none',
+        explanation: 'No drone detected in the frame.',
+      };
 
     } catch (error) {
       console.error('Error processing drone detection flow:', error);
-      // Return a default "nothing detected" response if parsing fails
+      // Return a default "nothing detected" response if an error occurs
       return {
         droneDetected: false,
         objectType: 'none',
