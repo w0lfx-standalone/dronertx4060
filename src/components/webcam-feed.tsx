@@ -5,7 +5,7 @@ import { realTimeDroneDetection } from "@/ai/flows/real-time-drone-detection";
 import type { DetectionEvent } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Video, VideoOff } from "lucide-react";
+import { VideoOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type WebcamFeedProps = {
@@ -25,7 +25,7 @@ export default function WebcamFeed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
   const isProcessingRef = useRef(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState(true);
   const { toast } = useToast();
 
   const processFrame = useCallback(async () => {
@@ -35,7 +35,7 @@ export default function WebcamFeed({
       !canvasRef.current ||
       videoRef.current.paused ||
       videoRef.current.ended ||
-      videoRef.current.readyState < 2
+      videoRef.current.readyState < 3 // Wait for enough data
     ) {
       return;
     }
@@ -54,12 +54,13 @@ export default function WebcamFeed({
         const frameDataUri = canvas.toDataURL("image/jpeg");
 
         const result = await realTimeDroneDetection({ frameDataUri });
-        if (result.objectType !== 'none' && result.explanation) {
-          onDetection({
-            explanation: result.explanation,
-            frameDataUri: frameDataUri,
-            objectType: result.objectType,
-          });
+
+        if (result.objectType.toLowerCase().includes('drone') && result.explanation) {
+            onDetection({
+                explanation: result.explanation,
+                frameDataUri,
+                objectType: 'drone',
+            });
         }
       }
     } catch (error) {
@@ -72,28 +73,23 @@ export default function WebcamFeed({
   useEffect(() => {
     async function setupWebcam() {
       if (isActive) {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-              videoRef.current.play().catch(e => console.error("Video play failed", e));
-              setHasCameraPermission(true);
-              onCameraStatusChange(true);
-            }
-          } catch (error) {
-            console.error("Error accessing webcam:", error);
-            setHasCameraPermission(false);
-            onCameraStatusChange(false);
-            toast({
-              variant: 'destructive',
-              title: 'Camera Access Denied',
-              description: 'Please enable camera permissions to start detection.',
-            });
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(e => console.error("Video play failed", e));
           }
-        } else {
+          setHasCameraPermission(true);
+          onCameraStatusChange(true);
+        } catch (error) {
+          console.error("Error accessing webcam:", error);
           setHasCameraPermission(false);
           onCameraStatusChange(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions to start detection.',
+          });
         }
       } else {
         if (videoRef.current?.srcObject) {
@@ -101,8 +97,6 @@ export default function WebcamFeed({
           stream.getTracks().forEach((track) => track.stop());
           videoRef.current.srcObject = null;
         }
-        setHasCameraPermission(null);
-        onCameraStatusChange(true); // Allow stopping detection
       }
     }
     setupWebcam();
@@ -141,19 +135,19 @@ export default function WebcamFeed({
               autoPlay
               playsInline
               muted
-              className={`w-full h-full object-cover ${!isActive ? 'hidden' : ''}`}
+              className="w-full h-full object-cover"
             />
             {!isActive && (
-                 <div className="text-muted-foreground text-center p-4 flex flex-col items-center gap-4">
+                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm text-muted-foreground text-center p-4">
                      <VideoOff className="w-16 h-16" />
-                     <p className="font-semibold">Webcam is off</p>
+                     <p className="font-semibold mt-4">Webcam is off</p>
                      <p className="text-sm">Press "Start Detection" to begin surveillance.</p>
                  </div>
             )}
-            {hasCameraPermission === false && isActive && (
-                <div className="p-4">
-                    <Alert variant="destructive">
-                        <AlertTitle>Camera Access Required</AlertTitle>
+            {!hasCameraPermission && isActive && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm text-center p-4">
+                    <Alert variant="destructive" className="max-w-sm">
+                        <AlertTitle>Camera Access Denied</AlertTitle>
                         <AlertDescription>
                             Please allow camera access in your browser settings and try again.
                         </AlertDescription>
@@ -168,7 +162,8 @@ export default function WebcamFeed({
               isActive && hasCameraPermission ? "bg-green-500 animate-pulse" : "bg-red-500"
             }`}
           ></span>
-          {isActive && hasCameraPermission ? "LIVE" : "OFFLINE"}
+          {isActive && hasCameraSudo
+? "LIVE" : "OFFLINE"}
         </div>
       </CardContent>
     </Card>

@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import WebcamFeed from "./webcam-feed";
+import dynamic from 'next/dynamic';
 import DetectionLog from "./detection-log";
 import Controls from "./controls";
 import Header from "./header";
 import { useToast } from "@/hooks/use-toast";
 import type { DetectionEvent } from "@/types";
+
+const WebcamFeed = dynamic(() => import('./webcam-feed'), { ssr: false });
+
 
 export default function Dashboard() {
   const [detectionEvents, setDetectionEvents] = useState<DetectionEvent[]>([]);
