@@ -33,6 +33,7 @@ export async function explainDroneDetection(input: ExplainDroneDetectionInput): 
 
 const prompt = ai.definePrompt({
   name: 'explainDroneDetectionPrompt',
+  model: 'llama3',
   input: {schema: ExplainDroneDetectionInputSchema},
   output: {schema: ExplainDroneDetectionOutputSchema},
   prompt: `You are an expert system designed to explain why an object was identified as a drone.
@@ -43,7 +44,7 @@ Object Size: {{{objectSize}}}
 Motion Patterns: {{{motionPatterns}}}
 Photo: {{media url=photoDataUri}}
 
-Based on this information, explain why the object was likely identified as a drone. Consider factors such as the object's size, movement patterns, and appearance in the photo. Provide a reasoned explanation that helps the user understand the system's decision-making process.`,
+Based on this information, explain why the object was likely identified as a drone. Consider factors such as the object's size, movement patterns, and appearance in the photo. Provide a reasoned explanation that helps the user understand the system's decision-making process. Respond in JSON format.`,
 });
 
 const explainDroneDetectionFlow = ai.defineFlow(

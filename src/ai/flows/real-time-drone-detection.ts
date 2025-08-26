@@ -32,6 +32,7 @@ export async function realTimeDroneDetection(input: RealTimeDroneDetectionInput)
 
 const detectDronePrompt = ai.definePrompt({
   name: 'detectDronePrompt',
+  model: 'llama3',
   input: {schema: RealTimeDroneDetectionInputSchema},
   output: {schema: RealTimeDroneDetectionOutputSchema},
   prompt: `You are an expert in analyzing webcam feeds for drone and other flying object detection.
@@ -44,7 +45,7 @@ const detectDronePrompt = ai.definePrompt({
   2.  If a flying object that is NOT a drone is detected (e.g., a bird, airplane, helicopter), set 'droneDetected' to false, set 'objectType' to the identified object (e.g., 'bird', 'plane'), and provide an explanation of what was detected.
   3.  If no flying object is detected, set 'droneDetected' to false and 'objectType' to 'none'.
 
-  Consider factors like object size, motion patterns, and typical shapes.
+  Consider factors like object size, motion patterns, and typical shapes. Respond in JSON format.
 `,
 });
 
