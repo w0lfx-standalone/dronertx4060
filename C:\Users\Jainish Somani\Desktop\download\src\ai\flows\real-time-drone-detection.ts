@@ -8,8 +8,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { RealTimeDroneDetectionInputSchema, RealTimeDroneDetectionOutputSchema, type RealTimeDroneDetectionInput, type RealTimeDroneDetectionOutput } from '@/types';
-import { ollama } from 'genkitx-ollama';
-
 
 export async function realTimeDroneDetection(input: RealTimeDroneDetectionInput): Promise<RealTimeDroneDetectionOutput> {
   return realTimeDroneDetectionFlow(input);
