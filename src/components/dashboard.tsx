@@ -10,12 +10,10 @@ import type { DetectionEvent } from "@/types";
 
 const WebcamFeed = dynamic(() => import('./webcam-feed'), { ssr: false });
 
-
 export default function Dashboard() {
   const [detectionEvents, setDetectionEvents] = useState<DetectionEvent[]>([]);
   const [sensitivity, setSensitivity] = useState(5); // 1-10
   const [isWebcamActive, setIsWebcamActive] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState(true);
   const { toast } = useToast();
 
   const handleDetection = useCallback(
@@ -41,21 +39,7 @@ export default function Dashboard() {
   );
   
   const handleToggleWebcam = () => {
-    if (isWebcamActive) {
-      setIsWebcamActive(false);
-    } else {
-      // If we don't have permission, we shouldn't be able to start
-      if (hasCameraPermission) {
-        setIsWebcamActive(true);
-      } else {
-        // This case is handled in webcam-feed, but as a fallback
-         toast({
-              variant: 'destructive',
-              title: 'Camera Access Denied',
-              description: 'Please enable camera permissions to start detection.',
-         });
-      }
-    }
+    setIsWebcamActive((prev) => !prev);
   };
 
   return (
@@ -68,7 +52,6 @@ export default function Dashboard() {
               onDetection={handleDetection}
               sensitivity={sensitivity}
               isActive={isWebcamActive}
-              onCameraStatusChange={setHasCameraPermission}
             />
             <Controls
               sensitivity={sensitivity}

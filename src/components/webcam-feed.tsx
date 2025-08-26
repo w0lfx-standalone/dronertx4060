@@ -12,21 +12,48 @@ type WebcamFeedProps = {
   onDetection: (event: Omit<DetectionEvent, "id" | "timestamp">) => void;
   sensitivity: number;
   isActive: boolean;
-  onCameraStatusChange: (hasPermission: boolean) => void;
 };
 
 export default function WebcamFeed({
   onDetection,
   sensitivity,
   isActive,
-  onCameraStatusChange,
 }: WebcamFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
   const isProcessingRef = useRef(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState(true);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
+
+    getCameraPermission();
+
+    return () => {
+        if (videoRef.current?.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach((track) => track.stop());
+        }
+    }
+  }, [toast]);
 
   const processFrame = useCallback(async () => {
     if (
@@ -35,7 +62,7 @@ export default function WebcamFeed({
       !canvasRef.current ||
       videoRef.current.paused ||
       videoRef.current.ended ||
-      videoRef.current.readyState < 3 // Wait for enough data
+      videoRef.current.readyState < 3
     ) {
       return;
     }
@@ -55,12 +82,12 @@ export default function WebcamFeed({
 
         const result = await realTimeDroneDetection({ frameDataUri });
 
-        if (result.objectType.toLowerCase().includes('drone') && result.explanation) {
-            onDetection({
-                explanation: result.explanation,
-                frameDataUri,
-                objectType: 'drone',
-            });
+        if (result.droneDetected && result.explanation) {
+          onDetection({
+            explanation: result.explanation,
+            frameDataUri,
+            objectType: result.objectType,
+          });
         }
       }
     } catch (error) {
@@ -71,49 +98,12 @@ export default function WebcamFeed({
   }, [onDetection]);
 
   useEffect(() => {
-    async function setupWebcam() {
-      if (isActive) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play().catch(e => console.error("Video play failed", e));
-          }
-          setHasCameraPermission(true);
-          onCameraStatusChange(true);
-        } catch (error) {
-          console.error("Error accessing webcam:", error);
-          setHasCameraPermission(false);
-          onCameraStatusChange(false);
-          toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions to start detection.',
-          });
-        }
-      } else {
-        if (videoRef.current?.srcObject) {
-          const stream = videoRef.current.srcObject as MediaStream;
-          stream.getTracks().forEach((track) => track.stop());
-          videoRef.current.srcObject = null;
-        }
-      }
-    }
-    setupWebcam();
-
-    return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, [isActive, toast, onCameraStatusChange]);
-
-  useEffect(() => {
     if (isActive && hasCameraPermission) {
+      videoRef.current?.play().catch(e => console.error("Video play failed", e));
       const intervalDuration = Math.max(11000 - (sensitivity * 1000), 1000);
       intervalRef.current = setInterval(processFrame, intervalDuration);
     } else {
+      videoRef.current?.pause();
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -137,14 +127,7 @@ export default function WebcamFeed({
               muted
               className="w-full h-full object-cover"
             />
-            {!isActive && (
-                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm text-muted-foreground text-center p-4">
-                     <VideoOff className="w-16 h-16" />
-                     <p className="font-semibold mt-4">Webcam is off</p>
-                     <p className="text-sm">Press "Start Detection" to begin surveillance.</p>
-                 </div>
-            )}
-            {!hasCameraPermission && isActive && (
+            {hasCameraPermission === false && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm text-center p-4">
                     <Alert variant="destructive" className="max-w-sm">
                         <AlertTitle>Camera Access Denied</AlertTitle>
@@ -154,6 +137,13 @@ export default function WebcamFeed({
                     </Alert>
                 </div>
             )}
+            {!isActive && (
+                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm text-muted-foreground text-center p-4">
+                     <VideoOff className="w-16 h-16" />
+                     <p className="font-semibold mt-4">Webcam is off</p>
+                     <p className="text-sm">Press "Start Detection" to begin surveillance.</p>
+                 </div>
+            )}
         </div>
         <canvas ref={canvasRef} className="hidden" />
         <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-white/20">
@@ -162,8 +152,7 @@ export default function WebcamFeed({
               isActive && hasCameraPermission ? "bg-green-500 animate-pulse" : "bg-red-500"
             }`}
           ></span>
-          {isActive && hasCameraSudo
-? "LIVE" : "OFFLINE"}
+          {isActive && hasCameraPermission ? "LIVE" : "OFFLINE"}
         </div>
       </CardContent>
     </Card>
