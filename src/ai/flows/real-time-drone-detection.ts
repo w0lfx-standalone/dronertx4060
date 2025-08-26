@@ -24,7 +24,7 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
     try {
       const llmResponse = await ai.generate({
         model: 'ollama/llama3',
-        prompt: `Analyze the image provided and determine if a drone is present. Answer with only "yes" or "no". Image: {{media url=${input.frameDataUri}}}`,
+        prompt: `You are a security system. Analyze the provided image from a security camera. Your task is to identify if a drone is present. If you see a drone, respond with "drone". If you see other objects like a bird or a plane, name them. If nothing is detected, respond with "none". Image: {{media url=${input.frameDataUri}}}`,
         config: {
           temperature: 0.1,
         },
@@ -32,7 +32,7 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
 
       const responseText = llmResponse.text.toLowerCase().trim();
       
-      if (responseText.includes('yes')) {
+      if (responseText.includes('drone')) {
         return {
           droneDetected: true,
           objectType: 'drone',
@@ -40,7 +40,15 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
         };
       }
       
-      // If the answer is not 'yes', assume no drone was detected.
+      // If the answer is not 'drone', we can still log other objects if needed
+      if (responseText.includes('bird') || responseText.includes('plane')) {
+        return {
+          droneDetected: false,
+          objectType: responseText.includes('bird') ? 'bird' : 'plane',
+          explanation: `A non-threatening flying object (${responseText}) was detected.`,
+        };
+      }
+
       return {
         droneDetected: false,
         objectType: 'none',
