@@ -4,28 +4,12 @@
  * @fileOverview A flow to explain why a drone was detected.
  *
  * - explainDroneDetection - A function that explains why a drone was detected.
- * - ExplainDroneDetectionInput - The input type for the explainDroneDetection function.
- * - ExplainDroneDetectionOutput - The return type for the explainDroneDetection function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { ExplainDroneDetectionInputSchema, ExplainDroneDetectionOutputSchema, type ExplainDroneDetectionInput, type ExplainDroneDetectionOutput } from '@/types';
 
-const ExplainDroneDetectionInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of the detected object, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-  objectSize: z.string().describe('The size of the detected object.'),
-  motionPatterns: z.string().describe('The observed motion patterns of the object.'),
-});
-export type ExplainDroneDetectionInput = z.infer<typeof ExplainDroneDetectionInputSchema>;
-
-const ExplainDroneDetectionOutputSchema = z.object({
-  explanation: z.string().describe('The explanation of why the object was identified as a drone.'),
-});
-export type ExplainDroneDetectionOutput = z.infer<typeof ExplainDroneDetectionOutputSchema>;
 
 export async function explainDroneDetection(input: ExplainDroneDetectionInput): Promise<ExplainDroneDetectionOutput> {
   return explainDroneDetectionFlow(input);
@@ -33,7 +17,6 @@ export async function explainDroneDetection(input: ExplainDroneDetectionInput): 
 
 const prompt = ai.definePrompt({
   name: 'explainDroneDetectionPrompt',
-  model: 'llama3',
   input: {schema: ExplainDroneDetectionInputSchema},
   output: {schema: ExplainDroneDetectionOutputSchema},
   prompt: `You are an expert system designed to explain why an object was identified as a drone.
