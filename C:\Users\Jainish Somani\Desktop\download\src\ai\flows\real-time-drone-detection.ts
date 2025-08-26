@@ -8,6 +8,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { RealTimeDroneDetectionInputSchema, RealTimeDroneDetectionOutputSchema, type RealTimeDroneDetectionInput, type RealTimeDroneDetectionOutput } from '@/types';
+import { ollama } from 'genkitx-ollama';
 
 
 export async function realTimeDroneDetection(input: RealTimeDroneDetectionInput): Promise<RealTimeDroneDetectionOutput> {
@@ -38,8 +39,34 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
     inputSchema: RealTimeDroneDetectionInputSchema,
     outputSchema: RealTimeDroneDetectionOutputSchema,
   },
-  async input => {
-    const {output} = await detectDronePrompt(input);
-    return output!;
+  async (input) => {
+    try {
+      const llmResponse = await ai.generate({
+        model: ollama('llama3'),
+        prompt: `Is there a drone, bird, plane, or other flying object in this image? Respond in JSON format like this: {"droneDetected": boolean, "objectType": "drone" | "bird" | "plane" | "none", "explanation": "your detailed explanation"}. Image: {{media url=${input.frameDataUri}}}`,
+        config: {
+          temperature: 0.1,
+        },
+      });
+
+      const rawText = llmResponse.text;
+
+      // Clean up the model's response to make sure it's valid JSON
+      const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+      
+      const parsedOutput = JSON.parse(jsonText);
+      const validatedOutput = RealTimeDroneDetectionOutputSchema.parse(parsedOutput);
+
+      return validatedOutput;
+
+    } catch (error) {
+      console.error('Error processing drone detection flow:', error);
+      // Return a default "nothing detected" response if parsing fails
+      return {
+        droneDetected: false,
+        objectType: 'none',
+        explanation: 'Error processing frame.',
+      };
+    }
   }
 );
