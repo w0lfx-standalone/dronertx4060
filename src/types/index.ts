@@ -37,7 +37,7 @@ export type RealTimeDroneDetectionInput = z.infer<typeof RealTimeDroneDetectionI
 export const RealTimeDroneDetectionOutputSchema = z.object({
   droneDetected: z.boolean().describe('Whether a drone is detected in the frame.'),
   objectType: z.string().describe('The type of object detected (e.g., "drone", "bird", "plane", "none").'),
-  explanation: z.string().optional().describe('Optional explanation of what was detected.'),
-  debug: z.string().optional().describe('Debug information from the model response.')
+  explanation: z.string().describe('Optional explanation of what was detected.'),
+  debug: z.string().describe('Debug information from the model response.')
 });
 export type RealTimeDroneDetectionOutput = z.infer<typeof RealTimeDroneDetectionOutputSchema>;

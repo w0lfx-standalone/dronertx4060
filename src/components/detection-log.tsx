@@ -75,7 +75,7 @@ function ExplainButton({ event }: { event: DetectionEvent }) {
 }
 
 function EventIcon({ objectType }: { objectType: string }) {
-    switch (objectType.toLowerCase()) {
+    switch (objectType?.toLowerCase()) {
         case 'drone':
             return <Zap className="text-destructive h-5 w-5" />;
         case 'bird':
