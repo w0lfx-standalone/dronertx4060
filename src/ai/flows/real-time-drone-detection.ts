@@ -18,13 +18,16 @@ const detectionPrompt = ai.definePrompt({
     model: 'ollama/llama3',
     input: { schema: RealTimeDroneDetectionInputSchema },
     output: { schema: RealTimeDroneDetectionOutputSchema },
-    prompt: `You are a flying object detection system. Analyze the image and identify if it contains a drone, bird, or plane.
-- If a drone (machine with rotors/propellers) is detected, set objectType to "drone" and droneDetected to true.
-- If a bird is detected, set objectType to "bird" and droneDetected to false.
-- If a plane is detected, set objectType to "plane" and droneDetected to false.
-- If no flying objects are found, you MUST set objectType to "none" and droneDetected to false.
-- Do not identify any other objects (people, cars, etc.).
-- Provide a brief explanation for your detection.
+    prompt: `You are a specialized AI assistant for a flying object detection system. Your task is to analyze the image provided and classify the primary object of interest.
+
+Follow these rules precisely:
+1.  **If a DRONE is detected:** Look for manufactured objects with rigid frames, distinct propellers or rotors, and unnatural, stable, or hovering flight patterns. If a drone is detected, set objectType to "drone" and droneDetected to true.
+2.  **If a BIRD is detected:** Look for organic shapes, flapping wings, and natural, often gliding, flight. If a bird is detected, set objectType to "bird" and droneDetected to false.
+3.  **If a PLANE is detected:** Look for a fixed-wing aircraft with a distinct fuselage and wings. If a plane is detected, set objectType to "plane" and droneDetected to false.
+4.  **If a PERSON is detected:** If you see a human face or body, you MUST set objectType to "person" and droneDetected to false.
+5.  **If NOTHING is detected:** If no objects of interest (drone, bird, plane, person) are clearly visible, you MUST set objectType to "none" and droneDetected to false.
+
+Provide a brief explanation for your classification.
 
 Image: {{media url=frameDataUri}}`,
 });
