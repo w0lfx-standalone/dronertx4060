@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    --font-inter: 'Inter', sans-serif;
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
     --card: 222 47% 11%;
@@ -78,10 +79,8 @@
   * {
     @apply border-border;
   }
-  html {
-    font-family: 'Inter', sans-serif;
-  }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-inter);
   }
 }

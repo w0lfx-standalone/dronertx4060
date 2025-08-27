@@ -7,23 +7,21 @@ import Controls from "./controls";
 import Header from "./header";
 import { useToast } from "@/hooks/use-toast";
 import type { DetectionEvent } from "@/types";
-import DebugLog from "./debug-log";
 
 const WebcamFeed = dynamic(() => import('./webcam-feed'), { ssr: false });
 
 export default function Dashboard() {
   const [detectionEvents, setDetectionEvents] = useState<DetectionEvent[]>([]);
-  const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [sensitivity, setSensitivity] = useState(5); // 1-10
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const { toast } = useToast();
 
-  const handleLog = useCallback((message: string) => {
-    setDebugMessages((prev) => [message, ...prev].slice(0, 50));
-  }, []);
-
   const handleDetection = useCallback(
     (event: Omit<DetectionEvent, "id" | "timestamp">) => {
+      if (event.objectType === 'error' || event.objectType === 'none') {
+        return;
+      }
+      
       const newEvent: DetectionEvent = {
         ...event,
         id: `evt-${Date.now()}`,
@@ -56,18 +54,16 @@ export default function Dashboard() {
           <div className="xl:col-span-2 flex flex-col gap-6">
             <WebcamFeed
               onDetection={handleDetection}
-              onLog={handleLog}
               sensitivity={sensitivity}
               isActive={isWebcamActive}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                 <Controls
                   sensitivity={sensitivity}
                   onSensitivityChange={setSensitivity}
                   isWebcamActive={isWebcamActive}
                   onToggleWebcam={handleToggleWebcam}
                 />
-                <DebugLog messages={debugMessages} />
             </div>
           </div>
           <div className="xl:col-span-1 flex flex-col">

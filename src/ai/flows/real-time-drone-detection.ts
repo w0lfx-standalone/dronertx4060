@@ -9,10 +9,22 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { RealTimeDroneDetectionInputSchema, RealTimeDroneDetectionOutputSchema, type RealTimeDroneDetectionInput, type RealTimeDroneDetectionOutput } from '@/types';
 
-
 export async function realTimeDroneDetection(input: RealTimeDroneDetectionInput): Promise<RealTimeDroneDetectionOutput> {
   return realTimeDroneDetectionFlow(input);
 }
+
+const detectionPrompt = ai.definePrompt({
+    name: 'droneDetectionPrompt',
+    input: { schema: RealTimeDroneDetectionInputSchema },
+    output: { schema: RealTimeDroneDetectionOutputSchema },
+    prompt: `You are a security system. Analyze the provided image from a security camera. Your task is to identify if a drone is present.
+    - If you see a drone, respond with objectType: "drone".
+    - If you see other non-threatening flying objects like a bird or a plane, name them (e.g., objectType: "bird").
+    - If nothing of interest is detected, respond with objectType: "none".
+    Provide a brief explanation for your detection.
+    Image: {{media url=frameDataUri}}`,
+});
+
 
 const realTimeDroneDetectionFlow = ai.defineFlow(
   {
@@ -22,40 +34,23 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const llmResponse = await ai.generate({
-        model: 'ollama/llama3',
-        prompt: `You are a security system. Analyze the provided image from a security camera. Your task is to identify if a drone is present. If you see a drone, respond with "drone". If you see other objects like a bird or a plane, name them. If nothing is detected, respond with "none". Image: {{media url=${input.frameDataUri}}}`,
-        config: {
-          temperature: 0.1,
-        },
-      });
+      const llmResponse = await detectionPrompt(input);
+      const output = llmResponse.output;
 
-      const responseText = llmResponse.text.toLowerCase().trim();
-      
-      if (responseText.includes('drone')) {
-        return {
-          droneDetected: true,
-          objectType: 'drone',
-          explanation: 'A flying object identified as a drone was detected.',
-          debug: `Model raw response: "${responseText}"`
-        };
-      }
-      
-      if (responseText.includes('bird') || responseText.includes('plane')) {
-        const objectType = responseText.includes('bird') ? 'bird' : 'plane';
+      if (!output) {
         return {
           droneDetected: false,
-          objectType: objectType,
-          explanation: `A non-threatening flying object (${objectType}) was detected.`,
-          debug: `Model raw response: "${responseText}"`
+          objectType: 'none',
+          explanation: 'No valid response from model.',
+          debug: 'Model returned no output.'
         };
       }
-
+      
       return {
-        droneDetected: false,
-        objectType: 'none',
-        explanation: 'No drone detected in the frame.',
-        debug: `Model raw response: "${responseText}"`
+        droneDetected: output.objectType === 'drone',
+        objectType: output.objectType,
+        explanation: output.explanation,
+        debug: `Model response: ${JSON.stringify(output)}`
       };
 
     } catch (error) {
@@ -63,7 +58,7 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         droneDetected: false,
-        objectType: 'none',
+        objectType: 'error',
         explanation: 'Error processing frame.',
         debug: `Flow error: ${errorMessage}`
       };

@@ -10,14 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 
 type WebcamFeedProps = {
   onDetection: (event: Omit<DetectionEvent, "id" | "timestamp">) => void;
-  onLog: (message: string) => void;
   sensitivity: number;
   isActive: boolean;
 };
 
 export default function WebcamFeed({
   onDetection,
-  onLog,
   sensitivity,
   isActive,
 }: WebcamFeedProps) {
@@ -25,44 +23,42 @@ export default function WebcamFeed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
   const isProcessingRef = useRef(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState(true);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        onLog("Camera access not supported by this browser.");
-        setHasCameraPermission(false);
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
-      }
-    };
-
     if (isActive) {
-        getCameraPermission();
-    }
-
-    return () => {
+      const getCameraPermission = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setHasCameraPermission(false);
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+          setHasCameraPermission(true);
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this app.',
+          });
+        }
+      };
+      getCameraPermission();
+    } else {
         if (videoRef.current?.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach((track) => track.stop());
+            videoRef.current.srcObject = null;
         }
+        setHasCameraPermission(null);
     }
-  }, [isActive, toast, onLog]);
+  }, [isActive, toast]);
 
   const processFrame = useCallback(async () => {
     if (
@@ -77,7 +73,6 @@ export default function WebcamFeed({
     }
 
     isProcessingRef.current = true;
-    onLog("Capturing frame...");
 
     try {
       const video = videoRef.current;
@@ -91,24 +86,21 @@ export default function WebcamFeed({
         const frameDataUri = canvas.toDataURL("image/jpeg");
 
         const result = await realTimeDroneDetection({ frameDataUri });
-        
-        onLog(`AI: ${result.debug || 'No debug info'}`);
 
-        if (result.droneDetected && result.explanation) {
-          onDetection({
-            explanation: result.explanation,
-            frameDataUri,
-            objectType: result.objectType,
-          });
+        if (result.objectType !== 'none') {
+            onDetection({
+                explanation: result.explanation,
+                frameDataUri,
+                objectType: result.objectType,
+            });
         }
       }
     } catch (error: any) {
       console.error("Error during detection:", error);
-      onLog(`Error: ${error.message || 'Unknown error'}`);
     } finally {
       isProcessingRef.current = false;
     }
-  }, [onDetection, onLog]);
+  }, [onDetection]);
 
   useEffect(() => {
     if (isActive && hasCameraPermission) {
