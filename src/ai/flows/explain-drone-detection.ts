@@ -37,7 +37,10 @@ const explainDroneDetectionFlow = ai.defineFlow(
     outputSchema: ExplainDroneDetectionOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await prompt({
+      model: 'ollama/llama3',
+      ...input,
+    });
     return output!;
   }
 );
