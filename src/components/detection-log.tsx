@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { explainDroneDetection } from "@/ai/flows/explain-drone-detection";
 import type { DetectionEvent } from "@/types";
-import { Loader2, Zap, HelpCircle, Bird, Plane } from "lucide-react";
+import { Loader2, Zap, HelpCircle, Bird, Plane, User } from "lucide-react";
 
 type DetectionLogProps = {
   events: DetectionEvent[];
@@ -82,6 +82,8 @@ function EventIcon({ objectType }: { objectType: string }) {
             return <Bird className="text-blue-500 h-5 w-5" />;
         case 'plane':
             return <Plane className="text-gray-500 h-5 w-5" />;
+        case 'person':
+            return <User className="text-green-500 h-5 w-5" />;
         default:
             return <HelpCircle className="text-muted-foreground h-5 w-5" />;
     }
