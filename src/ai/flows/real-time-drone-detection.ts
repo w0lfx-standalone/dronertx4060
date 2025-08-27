@@ -18,12 +18,13 @@ const detectionPrompt = ai.definePrompt({
     model: 'ollama/llama3',
     input: { schema: RealTimeDroneDetectionInputSchema },
     output: { schema: RealTimeDroneDetectionOutputSchema },
-    prompt: `Analyze the image to determine if a drone is present. A drone is a flying machine, often with multiple rotors or propellers and a central body. It can be a real one, a toy, or a picture of one.
-- If a drone is detected, set objectType to "drone" and droneDetected to true.
-- If you see a bird, set objectType to "bird" and droneDetected to false.
-- If you see a plane, set objectType to "plane" and droneDetected to false.
-- If you see a person's face or body, set objectType to "person" and droneDetected to false.
-- If nothing of interest is detected, set objectType to "none" and droneDetected to false.
+    prompt: `You are an expert system for identifying flying objects in an image. Your only task is to detect drones, birds, or planes.
+
+- A "drone" is a flying machine with multiple rotors/propellers. If you see one, set objectType to "drone" and droneDetected to true.
+- A "bird" is an animal with wings. If you see one, set objectType to "bird" and droneDetected to false.
+- A "plane" is a fixed-wing aircraft. If you see one, set objectType to "plane" and droneDetected to false.
+- If NO flying objects (drone, bird, or plane) are in the image, you MUST set objectType to "none" and droneDetected to false. Do not identify people, cars, or other non-flying things.
+
 Provide a brief explanation for your detection.
 Image: {{media url=frameDataUri}}`,
 });
