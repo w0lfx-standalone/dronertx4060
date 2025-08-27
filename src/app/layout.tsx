@@ -22,7 +22,7 @@ export default function RootLayout({
           rel="stylesheet"
         ></link>
       </head>
-      <body className="antialiased bg-background text-foreground">
+      <body className="antialiased">
         {children}
         <Toaster />
       </body>
