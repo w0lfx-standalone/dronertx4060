@@ -18,14 +18,14 @@ const detectionPrompt = ai.definePrompt({
     model: 'ollama/llama3',
     input: { schema: RealTimeDroneDetectionInputSchema },
     output: { schema: RealTimeDroneDetectionOutputSchema },
-    prompt: `You are an expert system for identifying flying objects in an image. Your only task is to detect drones, birds, or planes.
+    prompt: `You are a flying object detection system. Analyze the image and identify if it contains a drone, bird, or plane.
+- If a drone (machine with rotors/propellers) is detected, set objectType to "drone" and droneDetected to true.
+- If a bird is detected, set objectType to "bird" and droneDetected to false.
+- If a plane is detected, set objectType to "plane" and droneDetected to false.
+- If no flying objects are found, you MUST set objectType to "none" and droneDetected to false.
+- Do not identify any other objects (people, cars, etc.).
+- Provide a brief explanation for your detection.
 
-- A "drone" is a flying machine with multiple rotors/propellers. If you see one, set objectType to "drone" and droneDetected to true.
-- A "bird" is an animal with wings. If you see one, set objectType to "bird" and droneDetected to false.
-- A "plane" is a fixed-wing aircraft. If you see one, set objectType to "plane" and droneDetected to false.
-- If NO flying objects (drone, bird, or plane) are in the image, you MUST set objectType to "none" and droneDetected to false. Do not identify people, cars, or other non-flying things.
-
-Provide a brief explanation for your detection.
 Image: {{media url=frameDataUri}}`,
 });
 
@@ -42,10 +42,11 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
       const output = llmResponse.output;
 
       if (!output) {
+        // Handle cases where the model returns a null or undefined output
         return {
           droneDetected: false,
-          objectType: 'none',
-          explanation: 'No valid response from model.',
+          objectType: 'error',
+          explanation: 'Model returned no output.',
           debug: 'Model returned no output.'
         };
       }
@@ -60,10 +61,11 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
     } catch (error) {
       console.error('Error processing drone detection flow:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      // Handle any exception during the flow execution
       return {
         droneDetected: false,
         objectType: 'error',
-        explanation: 'Error processing frame.',
+        explanation: 'An error occurred while processing the frame.',
         debug: `Flow error: ${errorMessage}`
       };
     }
