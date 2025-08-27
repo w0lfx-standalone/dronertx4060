@@ -23,6 +23,7 @@ const explainDroneDetectionFlow = ai.defineFlow(
   },
   async (input) => {
     const llmResponse = await ai.generate({
+      model: 'ollama/llama3',
       prompt: `You are an expert system designed to explain why an object was identified as a drone.
 
       You will use the following information to provide a clear and concise explanation:

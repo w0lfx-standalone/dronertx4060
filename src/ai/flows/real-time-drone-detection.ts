@@ -23,6 +23,7 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
   async (input) => {
     try {
       const llmResponse = await ai.generate({
+        model: 'ollama/llama3',
         prompt: `You are a security system. Analyze the provided image from a security camera. Your task is to identify if a drone is present. If you see a drone, respond with "drone". If you see other objects like a bird or a plane, name them. If nothing is detected, respond with "none". Image: {{media url=${input.frameDataUri}}}`,
         config: {
           temperature: 0.1,
