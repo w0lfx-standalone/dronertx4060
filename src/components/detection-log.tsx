@@ -134,7 +134,7 @@ export default function DetectionLog({ events }: DetectionLogProps) {
                         {event.explanation}
                       </p>
                       <div className="mt-3">
-                        <ExplainButton event={event} />
+                        {event.objectType === 'drone' && <ExplainButton event={event} />}
                       </div>
                     </div>
                   </div>

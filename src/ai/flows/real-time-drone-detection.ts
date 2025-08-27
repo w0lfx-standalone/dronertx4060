@@ -40,12 +40,12 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
         };
       }
       
-      // If the answer is not 'drone', we can still log other objects if needed
       if (responseText.includes('bird') || responseText.includes('plane')) {
+        const objectType = responseText.includes('bird') ? 'bird' : 'plane';
         return {
           droneDetected: false,
-          objectType: responseText.includes('bird') ? 'bird' : 'plane',
-          explanation: `A non-threatening flying object (${responseText}) was detected.`,
+          objectType: objectType,
+          explanation: `A non-threatening flying object (${objectType}) was detected.`,
         };
       }
 
@@ -57,7 +57,6 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
 
     } catch (error) {
       console.error('Error processing drone detection flow:', error);
-      // Return a default "nothing detected" response if an error occurs
       return {
         droneDetected: false,
         objectType: 'none',
