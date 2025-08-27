@@ -18,7 +18,7 @@ const detectionPrompt = ai.definePrompt({
     model: 'ollama/llama3',
     input: { schema: RealTimeDroneDetectionInputSchema },
     output: { schema: RealTimeDroneDetectionOutputSchema },
-    prompt: `You are a security system. Analyze the provided image from a security camera. Your task is to identify if a drone is present. A drone can be a real flying object, a toy, or even a picture of a drone.
+    prompt: `Analyze the image from a security camera. Identify if a drone is present. A drone can be a real flying object, a toy, or a picture of a drone.
 - If you see a drone of any kind, respond with objectType: "drone".
 - If you see other non-threatening flying objects like a bird or a plane, name them (e.g., objectType: "bird").
 - If nothing of interest is detected, respond with objectType: "none".
