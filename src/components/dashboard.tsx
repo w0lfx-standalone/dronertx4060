@@ -7,17 +7,27 @@ import Controls from "./controls";
 import Header from "./header";
 import { useToast } from "@/hooks/use-toast";
 import type { DetectionEvent } from "@/types";
+import DebugLog from "./debug-log";
 
 const WebcamFeed = dynamic(() => import('./webcam-feed'), { ssr: false });
 
 export default function Dashboard() {
   const [detectionEvents, setDetectionEvents] = useState<DetectionEvent[]>([]);
+  const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [sensitivity, setSensitivity] = useState(5); // 1-10
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const { toast } = useToast();
 
+  const addDebugMessage = useCallback((message: string) => {
+    setDebugMessages(prev => [message, ...prev].slice(0, 100));
+  }, []);
+
   const handleDetection = useCallback(
-    (event: Omit<DetectionEvent, "id" | "timestamp">) => {
+    (event: Omit<DetectionEvent, "id" | "timestamp">, debugInfo?: string) => {
+      if (debugInfo) {
+        addDebugMessage(`AI: ${debugInfo}`);
+      }
+
       if (event.objectType === 'error' || event.objectType === 'none') {
         return;
       }
@@ -39,7 +49,7 @@ export default function Dashboard() {
         });
       }
     },
-    [toast]
+    [toast, addDebugMessage]
   );
   
   const handleToggleWebcam = () => {
@@ -56,14 +66,16 @@ export default function Dashboard() {
               onDetection={handleDetection}
               sensitivity={sensitivity}
               isActive={isWebcamActive}
+              addDebugMessage={addDebugMessage}
             />
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Controls
                   sensitivity={sensitivity}
                   onSensitivityChange={setSensitivity}
                   isWebcamActive={isWebcamActive}
                   onToggleWebcam={handleToggleWebcam}
                 />
+                <DebugLog messages={debugMessages} />
             </div>
           </div>
           <div className="xl:col-span-1 flex flex-col">

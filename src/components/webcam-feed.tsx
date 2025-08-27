@@ -9,15 +9,17 @@ import { VideoOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type WebcamFeedProps = {
-  onDetection: (event: Omit<DetectionEvent, "id" | "timestamp">) => void;
+  onDetection: (event: Omit<DetectionEvent, "id" | "timestamp">, debugInfo?: string) => void;
   sensitivity: number;
   isActive: boolean;
+  addDebugMessage: (message: string) => void;
 };
 
 export default function WebcamFeed({
   onDetection,
   sensitivity,
   isActive,
+  addDebugMessage,
 }: WebcamFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,28 +29,29 @@ export default function WebcamFeed({
   const { toast } = useToast();
 
   useEffect(() => {
+    const getCameraPermission = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setHasCameraPermission(false);
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setHasCameraPermission(true);
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
+
     if (isActive) {
-      const getCameraPermission = async () => {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setHasCameraPermission(false);
-          return;
-        }
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-          setHasCameraPermission(true);
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings to use this app.',
-          });
-        }
-      };
       getCameraPermission();
     } else {
         if (videoRef.current?.srcObject) {
@@ -73,6 +76,7 @@ export default function WebcamFeed({
     }
 
     isProcessingRef.current = true;
+    addDebugMessage("Capturing frame...");
 
     try {
       const video = videoRef.current;
@@ -87,20 +91,19 @@ export default function WebcamFeed({
 
         const result = await realTimeDroneDetection({ frameDataUri });
 
-        if (result.objectType !== 'none') {
-            onDetection({
-                explanation: result.explanation,
-                frameDataUri,
-                objectType: result.objectType,
-            });
-        }
+        onDetection({
+            explanation: result.explanation,
+            frameDataUri,
+            objectType: result.objectType,
+        }, result.debug);
       }
     } catch (error: any) {
       console.error("Error during detection:", error);
+      addDebugMessage(`Error: ${error.message || "Unknown"}`);
     } finally {
       isProcessingRef.current = false;
     }
-  }, [onDetection]);
+  }, [onDetection, addDebugMessage]);
 
   useEffect(() => {
     if (isActive && hasCameraPermission) {
