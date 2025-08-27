@@ -37,6 +37,7 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
           droneDetected: true,
           objectType: 'drone',
           explanation: 'A flying object identified as a drone was detected.',
+          debug: `Model raw response: "${responseText}"`
         };
       }
       
@@ -46,6 +47,7 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
           droneDetected: false,
           objectType: objectType,
           explanation: `A non-threatening flying object (${objectType}) was detected.`,
+          debug: `Model raw response: "${responseText}"`
         };
       }
 
@@ -53,14 +55,17 @@ const realTimeDroneDetectionFlow = ai.defineFlow(
         droneDetected: false,
         objectType: 'none',
         explanation: 'No drone detected in the frame.',
+        debug: `Model raw response: "${responseText}"`
       };
 
     } catch (error) {
       console.error('Error processing drone detection flow:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         droneDetected: false,
         objectType: 'none',
         explanation: 'Error processing frame.',
+        debug: `Flow error: ${errorMessage}`
       };
     }
   }

@@ -10,12 +10,14 @@ import { useToast } from "@/hooks/use-toast";
 
 type WebcamFeedProps = {
   onDetection: (event: Omit<DetectionEvent, "id" | "timestamp">) => void;
+  onLog: (message: string) => void;
   sensitivity: number;
   isActive: boolean;
 };
 
 export default function WebcamFeed({
   onDetection,
+  onLog,
   sensitivity,
   isActive,
 }: WebcamFeedProps) {
@@ -23,11 +25,16 @@ export default function WebcamFeed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
   const isProcessingRef = useRef(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const getCameraPermission = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        onLog("Camera access not supported by this browser.");
+        setHasCameraPermission(false);
+        return;
+      }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
@@ -45,7 +52,9 @@ export default function WebcamFeed({
       }
     };
 
-    getCameraPermission();
+    if (isActive) {
+        getCameraPermission();
+    }
 
     return () => {
         if (videoRef.current?.srcObject) {
@@ -53,7 +62,7 @@ export default function WebcamFeed({
             stream.getTracks().forEach((track) => track.stop());
         }
     }
-  }, [toast]);
+  }, [isActive, toast, onLog]);
 
   const processFrame = useCallback(async () => {
     if (
@@ -68,6 +77,7 @@ export default function WebcamFeed({
     }
 
     isProcessingRef.current = true;
+    onLog("Capturing frame...");
 
     try {
       const video = videoRef.current;
@@ -81,6 +91,8 @@ export default function WebcamFeed({
         const frameDataUri = canvas.toDataURL("image/jpeg");
 
         const result = await realTimeDroneDetection({ frameDataUri });
+        
+        onLog(`AI: ${result.debug || 'No debug info'}`);
 
         if (result.droneDetected && result.explanation) {
           onDetection({
@@ -90,12 +102,13 @@ export default function WebcamFeed({
           });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during detection:", error);
+      onLog(`Error: ${error.message || 'Unknown error'}`);
     } finally {
       isProcessingRef.current = false;
     }
-  }, [onDetection]);
+  }, [onDetection, onLog]);
 
   useEffect(() => {
     if (isActive && hasCameraPermission) {
